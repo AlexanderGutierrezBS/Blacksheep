@@ -182,7 +182,7 @@
 
   async function listarProductos() {
     const caja = $("#prod-lista");
-    let ruta = "productos?select=codigo,nombre,marca,categoria,foto,precio_publico,precio_oferta,visible,agotado,oferta_activa,precio_manual,margen&order=nombre&limit=60";
+    let ruta = "productos?select=codigo,nombre,marca,categoria,foto,precio_publico,precio_oferta,visible,agotado,oferta_activa,precio_manual,margen,origen,oculto_por_sync&order=nombre&limit=60";
     const q = textoProd.trim().replace(/[,()*]/g, " ");
     if (q) ruta += `&or=(nombre.ilike.*${encodeURIComponent(q)}*,marca.ilike.*${encodeURIComponent(q)}*,codigo.ilike.*${encodeURIComponent(q)}*)`;
     if (filtroProd === "oferta") ruta += "&oferta_activa=eq.true";
@@ -197,7 +197,8 @@
           <span class="tarjeta-marca">${esc(p.marca || p.categoria || "")}</span><br>
           <span class="tarjeta-nombre">${esc(p.nombre)}</span>
           <span class="marcas">
-            ${!p.visible ? '<span class="mini">Oculto</span>' : ""}
+            ${!p.visible ? `<span class="mini">${p.oculto_por_sync ? "ASHIBAH ya no lo tiene" : "Oculto"}</span>` : ""}
+            ${p.origen === "propio" ? '<span class="mini">Propio</span>' : ""}
             ${p.agotado ? '<span class="mini">Sin stock</span>' : ""}
             ${p.oferta_activa ? '<span class="mini negro">Oferta</span>' : ""}
             ${p.precio_manual != null ? '<span class="mini">Precio fijo</span>' : ""}
@@ -233,7 +234,8 @@
           <label class="campo" for="margen"><span>Margen propio %</span><input id="margen" type="number" inputmode="decimal" min="0" step="1" placeholder="General" value="${p.margen ?? ""}"></label>
           <label class="campo" for="precio-fijo"><span>Precio fijo</span><input id="precio-fijo" type="number" inputmode="numeric" min="0" step="100" placeholder="Usa la fórmula" value="${p.precio_manual ?? ""}"></label>
         </div>
-        <p>Vacío = se usa la fórmula. Si cargás un precio fijo, manda sobre el cálculo.</p>
+        ${p.origen === "ashibah" ? `<label class="interruptor" for="costo-auto"><span>Actualizar el costo solo, todos los días, desde ASHIBAH</span><input id="costo-auto" type="checkbox" ${costo && costo.fijado_a_mano ? "" : "checked"}></label>` : ""}
+        <p>Vacío = se usa la fórmula. Si cargás un precio fijo, manda sobre el cálculo.${p.origen === "ashibah" ? " Si cambiás el costo a mano, deja de actualizarse solo." : ""}</p>
         <label class="interruptor" for="visible"><span>Se ve en la tienda</span><input id="visible" type="checkbox" ${p.visible ? "checked" : ""}></label>
         <label class="interruptor" for="agotado"><span>Sin stock</span><input id="agotado" type="checkbox" ${p.agotado ? "checked" : ""}></label>
         <label class="interruptor" for="oferta"><span>Oferta activa</span><input id="oferta" type="checkbox" ${p.oferta_activa ? "checked" : ""}></label>
@@ -246,6 +248,8 @@
       </form>`;
     ed.scrollIntoView({ behavior: "smooth", block: "start" });
     $("#cerrar-editor").addEventListener("click", () => { ed.innerHTML = ""; });
+    // si tocás el costo, queda fijado a mano
+    ed.querySelectorAll("#costo, [data-talla]").forEach((i) => i.addEventListener("input", () => { const a = $("#costo-auto"); if (a) a.checked = false; }));
     $("#form-prod").addEventListener("submit", async (e) => {
       e.preventDefault();
       const aviso = e.target.querySelector(".aviso-chico");
@@ -258,9 +262,9 @@
         let filaCosto;
         if (tallas.length) {
           const ct = {}; e.target.querySelectorAll("[data-talla]").forEach((i) => { ct[i.dataset.talla] = i.value === "" ? null : Number(i.value); });
-          filaCosto = { codigo, costo: null, costo_tallas: ct };
+          filaCosto = { codigo, costo: null, costo_tallas: ct, fijado_a_mano: !!$("#costo-auto") && !$("#costo-auto").checked };
         } else {
-          filaCosto = { codigo, costo: num("#costo"), costo_tallas: null };
+          filaCosto = { codigo, costo: num("#costo"), costo_tallas: null, fijado_a_mano: !!$("#costo-auto") && !$("#costo-auto").checked };
         }
         if (filaCosto.costo != null || filaCosto.costo_tallas) {
           await api("costos?on_conflict=codigo", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: JSON.stringify(filaCosto) });
@@ -270,7 +274,7 @@
         const hastaVal = $("#oferta-hasta").value;
         await api(`productos?codigo=eq.${encodeURIComponent(codigo)}`, { method: "PATCH", body: JSON.stringify({
           margen: num("#margen"), precio_manual: num("#precio-fijo"),
-          visible: $("#visible").checked, agotado: $("#agotado").checked,
+          visible: $("#visible").checked, oculto_por_sync: false, agotado: $("#agotado").checked,
           oferta_activa: ofertaOn, oferta_porcentaje: pct,
           oferta_hasta: hastaVal ? new Date(hastaVal + "T23:59:59-03:00").toISOString() : null
         }) });
@@ -346,7 +350,16 @@
         <label class="campo" for="wa"><span>Número</span><input id="wa" type="tel" inputmode="numeric" value="${esc(wa)}" placeholder="549…"></label>
         <button class="boton boton-ancho" type="submit">Guardar</button>
         <p class="aviso-chico" role="status">${wa ? `Los pedidos salen a +${esc(wa)}.` : "Todavía no hay número: la tienda no puede enviar pedidos."}</p>
-      </form>`;
+      </form>
+      <div class="panel-caja" id="caja-sync">
+        <h2>Actualización desde ASHIBAH</h2>
+        <p>Todos los días, a las 6:47, se traen los costos y productos de ASHIBAH: tus precios se recalculan, los productos nuevos se publican y los que ellos ya no tienen se ocultan. Lo que cargues vos y los costos fijados a mano no se tocan.</p>
+        <div id="sync-estado"><p class="aviso-chico">Cargando…</p></div>
+        <button class="boton boton-borde boton-ancho" type="button" id="sync-ahora">Actualizar ahora</button>
+        <p class="aviso-chico" id="sync-aviso" role="status"></p>
+      </div>`;
+    pintarSync();
+    $("#sync-ahora").addEventListener("click", sincronizarAhora);
     $("#form-ajustes").addEventListener("submit", async (e) => {
       e.preventDefault();
       const n = $("#wa").value.replace(/\D/g, "");
@@ -357,6 +370,56 @@
         toast("WhatsApp guardado"); T().recargar(); verAjustes(c);
       } catch (err) { aviso.textContent = "No se pudo guardar: " + err.message; }
     });
+  }
+
+  /* ---------- SINCRONIZACIÓN ---------- */
+  function textoSync(x) {
+    if (!x) return "Todavía no se hizo ninguna actualización.";
+    const cuando = new Date(x.fin || x.inicio).toLocaleString("es-AR", { dateStyle: "medium", timeStyle: "short" });
+    if (x.estado === "enviado") return `En curso desde ${cuando}.`;
+    if (x.estado === "error") return `La última (${cuando}) no se pudo completar: ${x.detalle || "error"}. Se vuelve a intentar mañana, o tocá "Actualizar ahora".`;
+    const partes = [];
+    partes.push(x.costos_cambiados ? `${x.costos_cambiados} costos actualizados` : "sin cambios de costos");
+    if (x.nuevos) partes.push(`${x.nuevos} productos nuevos`);
+    if (x.ocultados) partes.push(`${x.ocultados} ocultados porque ASHIBAH ya no los tiene`);
+    if (x.reaparecidos) partes.push(`${x.reaparecidos} volvieron`);
+    return `Última: ${cuando} · ${partes.join(" · ")}.`;
+  }
+
+  async function pintarSync() {
+    const caja = $("#sync-estado"); if (!caja) return;
+    try {
+      const [x] = await api("sincronizaciones?select=*&order=id.desc&limit=1");
+      caja.innerHTML = `<p style="color:var(--texto)">${esc(textoSync(x))}</p>`;
+    } catch (e) { caja.innerHTML = `<p>No se pudo leer el estado.</p>`; }
+  }
+
+  async function sincronizarAhora() {
+    const btn = $("#sync-ahora"), aviso = $("#sync-aviso");
+    btn.disabled = true; aviso.textContent = "Pidiendo la lista a ASHIBAH…";
+    try {
+      await api("rpc/pedir_sync", { method: "POST", body: "{}" });
+      let res = null;
+      for (let intento = 0; intento < 12; intento++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        aviso.textContent = "Procesando productos y costos…";
+        res = await api("rpc/procesar_sync", { method: "POST", body: "{}" });
+        if (res && res.estado !== "esperando") break;
+      }
+      if (res && res.estado === "ok") {
+        aviso.textContent = "Listo. Los precios ya están actualizados.";
+        toast("Actualizado desde ASHIBAH");
+        T().recargar();
+      } else if (res && res.estado === "esperando") {
+        aviso.textContent = "ASHIBAH está tardando en responder. Se termina sola en unos minutos.";
+      } else {
+        aviso.textContent = "No se pudo completar. Probá de nuevo en un rato.";
+      }
+    } catch (e) {
+      aviso.textContent = "No se pudo actualizar: " + e.message;
+    } finally {
+      btn.disabled = false; pintarSync();
+    }
   }
 
   window.BS_PANEL = { mostrar };

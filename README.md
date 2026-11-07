@@ -19,5 +19,6 @@ Tienda de perfumes de **@_blacksheep.sr**. Los productos, precios y pedidos vive
 - **Ofertas, stock, precio fijo, ocultar productos**: panel → *Productos*.
 - **Pedidos**: llegan por WhatsApp y quedan guardados en panel → *Pedidos*.
 - **Número de WhatsApp**: panel → *Ajustes*.
+- **Actualización diaria desde ASHIBAH** (6:47, hora de Argentina): trae costos y productos; los precios se recalculan solos, los productos nuevos se publican y los que ASHIBAH ya no tiene se ocultan. Los productos propios y los costos fijados a mano no se tocan. Estado y botón *Actualizar ahora* en panel → *Ajustes*.
 
 Los costos y márgenes nunca se ven en la tienda: solo los administradores pueden leerlos.
