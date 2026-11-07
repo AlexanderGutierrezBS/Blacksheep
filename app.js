@@ -195,6 +195,13 @@
   }
 
   function pintarGrilla() {
+    if (!estado.productos.length) {
+      $("#cuenta").textContent = "";
+      $("#chips").innerHTML = "";
+      $("#grilla").innerHTML = `<div class="vacio-grilla"><b>Colección en camino</b>Estamos cargando el stock nuevo. Mientras tanto, escribinos por WhatsApp o seguinos en Instagram.</div>`;
+      $("#ver-mas").hidden = true;
+      return;
+    }
     const lista = filtrados();
     const visibles = lista.slice(0, estado.mostrar);
     $("#cuenta").textContent = lista.length === 1 ? "1 producto" : `${lista.length.toLocaleString("es-AR")} productos`;
