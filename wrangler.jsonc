@@ -1,0 +1,9 @@
+// Configuración de publicación en Cloudflare: es un sitio estático, sin compilar.
+{
+  "name": "blacksheep",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./",
+    "not_found_handling": "single-page-application"
+  }
+}
