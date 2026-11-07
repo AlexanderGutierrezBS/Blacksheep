@@ -381,7 +381,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 }
 .pie-logo { width: 150px; position: relative; }
 .pie-texto { margin: 0; font: 400 12px/1.4 var(--f-dato); letter-spacing: .14em; text-transform: uppercase; color: var(--texto-2); }
-.pie-panel { font: 400 11px/1 var(--f-dato); color: var(--texto-2); text-decoration: none; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
+.pie-panel { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px solid var(--borde); border-radius: 999px; font: 500 11px/1 var(--f-dato); color: var(--texto-2); text-decoration: none; letter-spacing: .14em; text-transform: uppercase; transition: color .2s, border-color .2s; }
+.pie-panel:hover { color: var(--texto); border-color: var(--borde-fuerte); }
 
 /* ---------- capas (ficha, carrito, buscador) ---------- */
 .capa {
