@@ -464,6 +464,16 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && capaAbierta) cerrarCapas(); });
 
+  // Si una foto falla (conexión del celular), se vuelve a pedir hasta 2 veces
+  document.addEventListener("error", (e) => {
+    const img = e.target;
+    if (!(img instanceof HTMLImageElement) || !img.src.includes("/fotos/")) return;
+    const n = Number(img.dataset.reintento || 0);
+    if (n >= 2) return;
+    img.dataset.reintento = n + 1;
+    setTimeout(() => { img.src = img.src.split("?")[0] + "?r=" + (n + 1); }, 600 * (n + 1));
+  }, true);
+
   // Brillo que sigue al cursor o al dedo sobre las tarjetas
   document.addEventListener("pointermove", (e) => {
     const t = e.target.closest && e.target.closest(".tarjeta");

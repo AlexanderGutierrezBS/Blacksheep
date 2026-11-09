@@ -261,7 +261,6 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   position: relative; display: grid; gap: 12px; align-content: start; text-align: left; min-width: 0;
   padding: 8px 8px 16px; border-radius: var(--radio);
   background: var(--vidrio);
-  -webkit-backdrop-filter: blur(20px) saturate(150%); backdrop-filter: blur(20px) saturate(150%);
   border: 1px solid var(--borde);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 24px 50px -30px rgba(0,0,0,.9);
   transition: transform .45s cubic-bezier(.2,.7,.2,1), border-color .3s, box-shadow .45s;
@@ -272,8 +271,14 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   background: radial-gradient(260px circle at var(--mx) var(--my), rgba(255,255,255,.16), transparent 60%);
   opacity: 0; transition: opacity .35s;
 }
-.tarjeta:hover, .tarjeta:focus-visible { transform: translateY(-6px); border-color: var(--borde-fuerte); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 34px 60px -28px rgba(0,0,0,1); }
-.tarjeta:hover::after, .tarjeta:active::after, .tarjeta.toque::after { opacity: 1; }
+.tarjeta:focus-visible { border-color: var(--borde-fuerte); }
+@media (hover: hover) and (pointer: fine) {
+  .tarjeta { -webkit-backdrop-filter: blur(20px) saturate(150%); backdrop-filter: blur(20px) saturate(150%); }
+  .tarjeta:hover { transform: translateY(-6px); border-color: var(--borde-fuerte); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 34px 60px -28px rgba(0,0,0,1); }
+  .tarjeta:hover::after { opacity: 1; }
+  .tarjeta:hover .tarjeta-foto img { transform: scale(1.07) translateY(-2%); }
+}
+.tarjeta.toque::after { opacity: 1; }
 @keyframes entrar { from { opacity: .0001; transform: translateY(40px) scale(.96); } }
 
 .tarjeta-foto {
@@ -293,7 +298,6 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 }
 .tarjeta-foto > :not(img):not(.tarjeta-sin-foto) { z-index: 2; }
 .tarjeta-foto::after { box-shadow: inset 0 -30px 50px -30px rgba(0,0,0,.35); }
-.tarjeta:hover .tarjeta-foto img { transform: scale(1.07) translateY(-2%); }
 .tarjeta-sin-foto {
   position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center;
   font: 900 clamp(1.6rem, 6vw, 2.6rem)/.86 var(--f-display); text-transform: uppercase; color: #b9b9b7;
@@ -394,8 +398,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 
 /* ---------- capas (ficha, carrito, buscador) ---------- */
 .capa {
-  position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.6);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.78);
   display: flex; justify-content: flex-end; align-items: flex-end;
   animation: aparecer .25s ease both;
 }
@@ -568,4 +571,10 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
   html { scroll-behavior: auto; }
+}
+
+/* Desenfoque de fondo solo en computadoras: en iPhone, Safari deja
+   fotos en blanco dentro de elementos con desenfoque. */
+@media (hover: hover) and (pointer: fine) {
+  .capa { background: rgba(0,0,0,.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 }
