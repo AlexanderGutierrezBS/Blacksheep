@@ -47,6 +47,9 @@
     return CFG.supabaseUrl + "/storage/v1/object/public/fotos/" + encodeURIComponent(nombre);
   };
 
+  /* Foto según el tamaño elegido (si ese tamaño tiene una propia) */
+  const fotoDe = (p, ml) => (ml && p.fotos_tallas && p.fotos_tallas[ml]) || p.foto;
+
   /* ---------- precios ---------- */
   const ofertaVigente = (p) =>
     !!p.oferta_activa && p.precio_oferta != null && (!p.oferta_hasta || new Date(p.oferta_hasta) > new Date());
@@ -99,7 +102,7 @@
         estado.whatsapp = DEMO.whatsapp || "";
       } else {
         const cols = "codigo,nombre,marca,linea,concentracion,genero,familia,ml,categoria,acordes,adn,salida,corazon,fondo,foto," +
-          "precio_publico,precio_oferta,precios_tallas,ofertas_tallas,oferta_activa,oferta_porcentaje,oferta_hasta,agotado,stock,perfil";
+          "precio_publico,precio_oferta,precios_tallas,ofertas_tallas,oferta_activa,oferta_porcentaje,oferta_hasta,agotado,stock,perfil,fotos_tallas";
         const todos = [];
         for (let desde = 0; ; desde += 1000) {
           const lote = await api(`productos?select=${cols}&visible=eq.true&precio_publico=not.is.null&order=codigo&limit=1000&offset=${desde}`);
@@ -229,7 +232,7 @@
     const acordes = (p.acordes || "").split(/[,;·]/).map((a) => a.trim()).filter(Boolean).slice(0, 8);
     const sub = [p.concentracion, p.genero, p.familia].filter(Boolean).join(" · ");
     $("#ficha").innerHTML = `
-      <div class="ficha-foto">${p.foto ? `<img src="${esc(fotoUrl(p.foto))}" alt="${esc(p.nombre)}">` : `<span class="tarjeta-sin-foto">${esc(p.marca || "")}</span>`}</div>
+      <div class="ficha-foto">${fotoDe(p, ml) ? `<img src="${esc(fotoUrl(fotoDe(p, ml)))}" alt="${esc(p.nombre)}${ml ? " " + esc(ml) + " ml" : ""}">` : `<span class="tarjeta-sin-foto">${esc(p.marca || "")}</span>`}</div>
       <div>
         <p class="etiqueta">${esc(p.marca || p.categoria)}</p>
         <h3 id="ficha-nombre">${esc(p.nombre)}</h3>
@@ -325,7 +328,7 @@
     $("#enviar-pedido").disabled = !lineas.length;
     $("#carrito-lista").innerHTML = lineas.length ? lineas.map((l) => `
       <div class="linea">
-        <div class="linea-foto">${l.p.foto ? `<img src="${esc(fotoUrl(l.p.foto))}" alt="">` : ""}</div>
+        <div class="linea-foto">${fotoDe(l.p, l.ml) ? `<img src="${esc(fotoUrl(fotoDe(l.p, l.ml)))}" alt="">` : ""}</div>
         <div>
           <p class="linea-nombre">${esc(l.p.nombre)}</p>
           <span class="linea-detalle">${esc([l.p.marca, l.ml ? l.ml + " ml" : (l.p.ml ? l.p.ml + " ml" : "")].filter(Boolean).join(" · "))}${l.pr.oferta ? " · oferta" : ""}</span>
