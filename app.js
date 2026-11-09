@@ -222,6 +222,34 @@
     fichaActual = { p, ml: tallasDe(p)[0] || null, cant: 1 };
     pintarFicha();
     abrirCapa("#capa-ficha");
+    // Precarga las fotos de los otros tamaños para que el cambio sea instantáneo
+    Object.values(p.fotos_tallas || {}).forEach((f) => { new Image().src = fotoUrl(f); });
+  }
+
+  // Cambiar tamaño o cantidad: solo se actualizan foto, precio y botón,
+  // sin rearmar la ficha (en iPhone rearmarla hace saltar y hacer zoom).
+  function actualizarFicha() {
+    const { p, ml, cant } = fichaActual;
+    const t = tallasDe(p);
+    const pr = t.length ? precioDe(p, ml) : precioDe(p);
+    const img = $("#ficha .ficha-foto img");
+    const f = fotoDe(p, ml);
+    if (img && f) {
+      const nueva = fotoUrl(f);
+      if (img.getAttribute("src") !== nueva) {
+        const pre = new Image();
+        pre.onload = () => { img.src = nueva; };
+        pre.onerror = () => { img.src = nueva; };
+        pre.src = nueva;
+        img.alt = p.nombre + (ml ? " " + ml + " ml" : "");
+      }
+    }
+    const precio = $("#ficha .ficha-precio");
+    if (precio) precio.innerHTML = `${pesos(pr.ahora)}${pr.oferta ? `<s>${pesos(pr.antes)}</s>` : ""}`;
+    const salida = $("#ficha .cantidad output");
+    if (salida) salida.textContent = cant;
+    const boton = $("#agregar");
+    if (boton) boton.textContent = `Agregar · ${pesos(pr.ahora * cant)}`;
   }
 
   function pintarFicha() {
@@ -454,13 +482,13 @@
     if (tarjeta) { abrirFicha(tarjeta.dataset.codigo); return; }
     if (e.target.closest("[data-cerrar]") || e.target.classList.contains("capa")) { cerrarCapas(); return; }
     const c = e.target.closest("[data-cant]");
-    if (c && fichaActual) { fichaActual.cant = Math.max(1, Math.min(99, fichaActual.cant + Number(c.dataset.cant))); pintarFicha(); return; }
+    if (c && fichaActual) { fichaActual.cant = Math.max(1, Math.min(99, fichaActual.cant + Number(c.dataset.cant))); actualizarFicha(); return; }
     if (e.target.closest("#agregar")) { agregar(); return; }
     const mov = e.target.closest("[data-mov]");
     if (mov) { moverLinea(mov.dataset.linea, Number(mov.dataset.mov)); return; }
   });
   document.addEventListener("change", (e) => {
-    if (e.target.name === "talla" && fichaActual) { fichaActual.ml = e.target.value; pintarFicha(); }
+    if (e.target.name === "talla" && fichaActual) { fichaActual.ml = e.target.value; actualizarFicha(); }
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && capaAbierta) cerrarCapas(); });
 

@@ -442,8 +442,10 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .acordes li { padding: 7px 11px; border: 1px solid var(--borde); border-radius: 999px; font: 400 11px/1 var(--f-dato); letter-spacing: .08em; text-transform: uppercase; color: var(--texto-2); }
 .tallas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; border: 0; padding: 0; }
 .tallas legend { font: 500 11px/1 var(--f-dato); letter-spacing: .12em; text-transform: uppercase; color: var(--texto-2); margin-bottom: 10px; }
-.talla { position: relative; }
-.talla input { position: absolute; opacity: 0; }
+html { touch-action: manipulation; }
+.talla { position: relative; cursor: pointer; }
+.talla, .cantidad button, .boton, .tarjeta { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.talla input { position: absolute; inset: 0; opacity: 0; margin: 0; width: 100%; height: 100%; }
 .talla span { display: block; padding: 11px 15px; border: 1px solid var(--borde-fuerte); border-radius: 999px; font: 500 13px/1 var(--f-dato); }
 .talla input:checked + span { background: var(--texto); color: var(--inverso); border-color: var(--texto); }
 .talla input:focus-visible + span { outline: 2px solid var(--texto); outline-offset: 2px; }
