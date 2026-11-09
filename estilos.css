@@ -264,7 +264,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   border: 1px solid var(--borde);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 24px 50px -30px rgba(0,0,0,.9);
   transition: transform .45s cubic-bezier(.2,.7,.2,1), border-color .3s, box-shadow .45s;
-  animation: entrar .7s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 55ms);
+  animation: entrar .7s cubic-bezier(.2,.7,.2,1) backwards; animation-delay: calc(var(--i, 0) * 55ms);
 }
 .tarjeta::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
@@ -293,9 +293,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 }
 .tarjeta-foto img {
   position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; padding: 9%;
-  transition: transform .6s cubic-bezier(.2,.7,.2,1);
-  filter: saturate(1.15) contrast(1.04);
 }
+@media (hover: hover) and (pointer: fine) { .tarjeta-foto img { transition: transform .6s cubic-bezier(.2,.7,.2,1); } }
 .tarjeta-foto > :not(img):not(.tarjeta-sin-foto) { z-index: 2; }
 .tarjeta-foto::after { box-shadow: inset 0 -30px 50px -30px rgba(0,0,0,.35); }
 .tarjeta-sin-foto {
@@ -316,7 +315,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .precio { font: 500 15px/1.2 var(--f-dato); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; color: var(--texto); }
 .precio s { color: var(--texto-2); font-size: 12px; }
 .precio small { font-size: 10.5px; color: var(--texto-2); letter-spacing: .08em; text-transform: uppercase; }
-.agotado .tarjeta-foto img { opacity: .35; filter: grayscale(1); }
+.agotado .tarjeta-foto img { opacity: .35; }
 
 .vacio-grilla { grid-column: 1 / -1; padding: 48px 0; border-top: 1px solid var(--borde); color: var(--texto-2); }
 .vacio-grilla b { font: 900 2.4rem/.9 var(--f-display); text-transform: uppercase; display: block; margin-bottom: 10px; color: var(--texto); }
@@ -408,7 +407,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   border: 1px solid var(--borde); border-radius: 22px 22px 0 0;
   padding-left: var(--gutter); padding-right: var(--gutter-der);
   padding-block: 20px calc(24px + env(safe-area-inset-bottom, 0px));
-  animation: deslizar .4s cubic-bezier(.2,.7,.2,1) both;
+  animation: deslizar .4s cubic-bezier(.2,.7,.2,1);
 }
 @keyframes deslizar { from { transform: translateY(40px); opacity: 0; } }
 .hoja-lateral { display: flex; flex-direction: column; height: 100%; max-height: none; border-radius: 0; }
@@ -431,7 +430,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 @media (min-width: 720px) { .ficha { grid-template-columns: 1fr 1fr; gap: 44px; } }
 .ficha > * { min-width: 0; }
 .ficha-foto { background: #fff; aspect-ratio: 1; display: grid; place-items: center; border-radius: 16px; overflow: hidden; position: relative; }
-.ficha-foto img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; padding: 9%; filter: saturate(1.15); }
+.ficha-foto img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; padding: 9%; }
+.ficha-foto img[hidden] { display: none; }
 .ficha h3 { font: 900 clamp(2.8rem, 9vw, 4.4rem)/.84 var(--f-display); text-transform: uppercase; margin: 6px 0 12px; overflow-wrap: anywhere; }
 .ficha-adn { font-size: 16px; margin: 0 0 22px; color: var(--texto-2); }
 .notas { display: grid; margin: 0 0 22px; }

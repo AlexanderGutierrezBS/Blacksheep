@@ -222,8 +222,6 @@
     fichaActual = { p, ml: tallasDe(p)[0] || null, cant: 1 };
     pintarFicha();
     abrirCapa("#capa-ficha");
-    // Precarga las fotos de los otros tamaños para que el cambio sea instantáneo
-    Object.values(p.fotos_tallas || {}).forEach((f) => { new Image().src = fotoUrl(f); });
   }
 
   // Cambiar tamaño o cantidad: solo se actualizan foto, precio y botón,
@@ -232,18 +230,9 @@
     const { p, ml, cant } = fichaActual;
     const t = tallasDe(p);
     const pr = t.length ? precioDe(p, ml) : precioDe(p);
-    const img = $("#ficha .ficha-foto img");
+    // Las fotos de todos los tamaños ya están en la ficha: solo se muestra la que toca
     const f = fotoDe(p, ml);
-    if (img && f) {
-      const nueva = fotoUrl(f);
-      if (img.getAttribute("src") !== nueva) {
-        const pre = new Image();
-        pre.onload = () => { img.src = nueva; };
-        pre.onerror = () => { img.src = nueva; };
-        pre.src = nueva;
-        img.alt = p.nombre + (ml ? " " + ml + " ml" : "");
-      }
-    }
+    document.querySelectorAll("#ficha .ficha-foto img").forEach((img) => { img.hidden = img.dataset.foto !== f; });
     const precio = $("#ficha .ficha-precio");
     if (precio) precio.innerHTML = `${pesos(pr.ahora)}${pr.oferta ? `<s>${pesos(pr.antes)}</s>` : ""}`;
     const salida = $("#ficha .cantidad output");
@@ -259,8 +248,9 @@
     const notas = [["Salida", p.salida], ["Corazón", p.corazon], ["Fondo", p.fondo]].filter(([, v]) => v);
     const acordes = (p.acordes || "").split(/[,;·]/).map((a) => a.trim()).filter(Boolean).slice(0, 8);
     const sub = [p.concentracion, p.genero, p.familia].filter(Boolean).join(" · ");
+    const fotosFicha = [...new Set([p.foto, ...Object.values(p.fotos_tallas || {})].filter(Boolean))];
     $("#ficha").innerHTML = `
-      <div class="ficha-foto">${fotoDe(p, ml) ? `<img src="${esc(fotoUrl(fotoDe(p, ml)))}" alt="${esc(p.nombre)}${ml ? " " + esc(ml) + " ml" : ""}">` : `<span class="tarjeta-sin-foto">${esc(p.marca || "")}</span>`}</div>
+      <div class="ficha-foto">${fotosFicha.length ? fotosFicha.map((f) => `<img src="${esc(fotoUrl(f))}" data-foto="${esc(f)}" alt="${esc(p.nombre)}" width="800" height="1000" decoding="sync"${f === fotoDe(p, ml) ? "" : " hidden"}>`).join("") : `<span class="tarjeta-sin-foto">${esc(p.marca || "")}</span>`}</div>
       <div>
         <p class="etiqueta">${esc(p.marca || p.categoria)}</p>
         <h3 id="ficha-nombre">${esc(p.nombre)}</h3>
