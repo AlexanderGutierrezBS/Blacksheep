@@ -99,7 +99,7 @@
         estado.whatsapp = DEMO.whatsapp || "";
       } else {
         const cols = "codigo,nombre,marca,linea,concentracion,genero,familia,ml,categoria,acordes,adn,salida,corazon,fondo,foto," +
-          "precio_publico,precio_oferta,precios_tallas,ofertas_tallas,oferta_activa,oferta_porcentaje,oferta_hasta,agotado";
+          "precio_publico,precio_oferta,precios_tallas,ofertas_tallas,oferta_activa,oferta_porcentaje,oferta_hasta,agotado,stock,perfil";
         const todos = [];
         for (let desde = 0; ; desde += 1000) {
           const lote = await api(`productos?select=${cols}&visible=eq.true&precio_publico=not.is.null&order=codigo&limit=1000&offset=${desde}`);
@@ -237,6 +237,7 @@
         ${p.adn ? `<p class="ficha-adn">${esc(p.adn)}</p>` : ""}
         ${notas.length ? `<dl class="notas">${notas.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` : ""}
         ${acordes.length ? `<ul class="acordes">${acordes.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+        ${perfilHtml(p.perfil)}
         ${t.length > 1 ? `<fieldset class="tallas"><legend>Tamaño</legend>${t.map((m) =>
           `<label class="talla"><input type="radio" name="talla" value="${esc(m)}" ${m === ml ? "checked" : ""}><span>${esc(m)} ml</span></label>`).join("")}</fieldset>`
           : (t.length === 1 ? `<p class="tarjeta-detalle" style="margin:0 0 12px">${esc(t[0])} ml</p>` : "")}
@@ -248,6 +249,44 @@
               <button class="boton" id="agregar">Agregar · ${pesos(pr.ahora * cant)}</button>
             </div>`}
       </div>`;
+  }
+
+  /* ---------- ficha ampliada (notas, duración, día/noche, estaciones) ---------- */
+  function perfilHtml(f) {
+    if (!f || typeof f !== "object") return "";
+    const bloques = [];
+    if (Array.isArray(f.notas) && f.notas.length) {
+      bloques.push(`<div class="perfil-bloque"><p class="perfil-titulo">Notas</p>
+        <ul class="perfil-notas">${f.notas.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>`);
+    }
+    if (f.longevidad || f.estela) {
+      bloques.push(`<div class="perfil-bloque perfil-duo">
+        ${f.longevidad ? `<div><span class="perfil-titulo">Duración</span><b>${esc(f.longevidad)}</b></div>` : ""}
+        ${f.estela ? `<div><span class="perfil-titulo">Estela</span><b>${esc(f.estela)}</b></div>` : ""}
+      </div>`);
+    }
+    if (f.dia != null && f.noche != null) {
+      const d = Math.max(0, Math.min(100, Number(f.dia))), total = d + Number(f.noche) || 100, pd = Math.round(d / total * 100);
+      bloques.push(`<div class="perfil-bloque"><p class="perfil-titulo">¿Día o noche?</p>
+        <div class="dianoche" role="img" aria-label="Día ${pd}%, noche ${100 - pd}%">
+          <span class="dn-dia" style="width:${pd}%">Día</span><span class="dn-noche">Noche</span>
+        </div></div>`);
+    }
+    if (f.estaciones && typeof f.estaciones === "object") {
+      const ORDEN = ["Invierno", "Primavera", "Verano", "Otoño"];
+      const ent = Object.entries(f.estaciones).sort(([a], [b]) => (ORDEN.indexOf(a) + 9) % 9 - (ORDEN.indexOf(b) + 9) % 9);
+      const max = Math.max(...ent.map(([, v]) => Number(v) || 0), 1);
+      bloques.push(`<div class="perfil-bloque"><p class="perfil-titulo">Estaciones</p>
+        <div class="estaciones">${ent.map(([k, v]) => `
+          <div class="estacion"><span>${esc(k)}</span><i style="--n:${Math.round((Number(v) || 0) / max * 100)}%"></i></div>`).join("")}
+        </div></div>`);
+    }
+    if (f.puntuacion) {
+      const pts = Number(f.puntuacion);
+      bloques.push(`<p class="perfil-puntaje"><b>${pts.toLocaleString("es-AR", { minimumFractionDigits: 1 })}</b> / 5
+        ${f.votos ? `· ${Number(f.votos).toLocaleString("es-AR")} votos` : ""}${f.fuente ? ` en ${esc(f.fuente)}` : ""}</p>`);
+    }
+    return bloques.length ? `<div class="perfil">${bloques.join("")}</div>` : "";
   }
 
   /* ---------- carrito ---------- */
