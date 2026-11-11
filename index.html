@@ -5,17 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BLACKSHEEP</title>
 <meta name="description" content="Perfumes árabes, de diseñador y de nicho. 100% originales. Santa Rosa, La Pampa.">
-<meta name="theme-color" content="#070708">
+<meta name="theme-color" content="#0c0b0a">
 <link rel="icon" href="assets/logo.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="estilos.css?v=5">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:ital,opsz,wght@1,6..96,400..600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="estilos.css?v=6">
 </head>
 <body>
 
-<!-- Fondo vivo: luces suaves y grano (solo decoración) -->
-<div class="ambiente" aria-hidden="true"><span class="luz luz-1"></span><span class="luz luz-2"></span><span class="luz luz-3"></span></div>
+<div class="progreso" id="progreso" aria-hidden="true"></div>
 
 <!-- ================= CABECERA (anuncios + barra) ================= -->
 <header class="cabecera" id="barra">
@@ -25,66 +24,65 @@
       <span>100% originales</span><span>Árabes · Diseñador · Nicho</span><span>Pedidos por WhatsApp</span><span>Santa Rosa · La Pampa</span>
     </div>
   </div>
-  <div class="barra">
+  <div class="barra envoltura">
     <nav class="barra-izq">
-      <a href="#tienda" class="barra-link">Tienda</a>
-      <a href="#nosotros" class="barra-link solo-ancho">Nosotros</a>
+      <a href="#tienda" class="barra-link">Colección</a>
+      <button class="barra-link solo-ancho" id="abrir-buscar" type="button">Buscar</button>
     </nav>
     <a href="#inicio" class="barra-logo" aria-label="BLACKSHEEP, ir al inicio">
       <img src="assets/wordmark-claro.webp" alt="BLACK SHEEP" width="1223" height="138">
     </a>
-    <div class="barra-der">
-      <button class="barra-link" id="abrir-buscar" aria-label="Buscar">Buscar</button>
-      <button class="barra-link barra-carrito" id="abrir-carrito">Carrito <span id="contador" class="contador">0</span></button>
-    </div>
+    <button class="barra-link barra-carrito" id="abrir-carrito" type="button">Carrito <span id="contador" class="contador vacio">0</span></button>
   </div>
 </header>
 
 <main id="vista-tienda">
 
-  <!-- ================= HERO ================= -->
+  <!-- ================= BIENVENIDA ================= -->
   <section class="hero" id="inicio">
-    <div class="hero-foto">
-      <img src="assets/oveja-retrato.webp" alt="La oveja negra de BLACKSHEEP con campera de cuero y anteojos de sol" width="912" height="526">
-    </div>
-    <div class="hero-contenido">
-      <p class="etiqueta hero-etiqueta">Perfumería · Santa Rosa</p>
-      <h1 class="hero-titulo" aria-label="BLACK SHEEP">
-        <span class="hero-linea cromo">BLACK</span>
-        <span class="hero-linea contorno">SHEEP</span>
-      </h1>
-      <div class="hero-pie">
-        <p class="hero-bajada">Perfumes árabes, de diseñador y de nicho. 100% originales.</p>
-        <a href="#tienda" class="boton boton-brillo">Shop now <span aria-hidden="true">→</span></a>
+    <div class="envoltura hero-in">
+      <div>
+        <p class="rotulo"><b>Perfumería</b> · Santa Rosa, La Pampa</p>
+        <h1 aria-label="Perfumes para salirse del rebaño">
+          <span><i>Perfumes</i></span><span><i>para salirse</i></span><span><i>del rebaño</i></span>
+        </h1>
+        <p class="hero-bajada">Fragancias árabes, de diseñador y de nicho. Originales, elegidas una por una y listas para entregar.</p>
       </div>
-    </div>
-    <!-- sello giratorio con el logo -->
-    <div class="sello-giro" aria-hidden="true">
-      <svg viewBox="0 0 200 200" class="sello-texto">
-        <defs><path id="circulo" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"></path></defs>
-        <text><textPath href="#circulo">BLACK SHEEP ✦ @_BLACKSHEEP.SR ✦ </textPath></text>
-      </svg>
-      <img src="assets/logo-claro.webp" alt="" width="630" height="700">
+      <div class="hero-foto">
+        <div class="arco"><img src="assets/oveja-retrato.webp" alt="La oveja negra de BLACKSHEEP con anteojos de sol y campera de cuero" width="912" height="526"></div>
+        <div class="sello-giro" aria-hidden="true">
+          <svg viewBox="0 0 100 100"><defs><path id="circulo" d="M50,50 m-39,0 a39,39 0 1,1 78,0 a39,39 0 1,1 -78,0"/></defs><text><textPath href="#circulo" textLength="238" lengthAdjust="spacing">Black Sheep · Originales · Santa Rosa ·</textPath></text></svg>
+          <b>bs</b>
+        </div>
+      </div>
+      <a class="descubrir" href="#recorrido"><i></i>Deslizá para descubrir</a>
     </div>
   </section>
 
-  <!-- ================= CINTA ================= -->
-  <div class="cinta" aria-hidden="true">
-    <div class="cinta-pista">
-      <span>Árabes</span><span class="hueco">Diseñador</span><span>Nicho</span><span class="hueco">Originales</span>
-      <span>Árabes</span><span class="hueco">Diseñador</span><span>Nicho</span><span class="hueco">Originales</span>
+  <!-- ================= MANIFIESTO ================= -->
+  <section class="manifiesto">
+    <div class="envoltura manifiesto-in">
+      <p class="frase rev">No vendemos lo que usa todo el mundo. Vendemos lo que <em>te van a preguntar</em> qué es.</p>
+      <ul class="cifras rev" style="--d:1">
+        <li><b id="dato-cantidad">–</b><span>fragancias en stock</span></li>
+        <li><b id="dato-casas">–</b><span>casas perfumistas</span></li>
+        <li><b>100%</b><span>originales</span></li>
+      </ul>
     </div>
-  </div>
+  </section>
 
-  <!-- ================= TIENDA ================= -->
-  <section class="tienda" id="tienda">
-    <div class="tienda-cabeza revela">
-      <h2 class="titulo-seccion">Colección</h2>
-      <p class="tienda-cuenta" id="cuenta">Cargando…</p>
+  <!-- ================= RECORRIDO (se arma solo con los perfumes elegidos en app.js) ================= -->
+  <section class="envoltura capitulos" id="recorrido" aria-label="Recorrido por la colección"></section>
+
+  <!-- ================= COLECCIÓN ================= -->
+  <section class="envoltura tienda" id="tienda">
+    <div class="tienda-cabeza">
+      <p class="rotulo rev"><b>La colección</b> · <span id="cuenta">Cargando…</span></p>
+      <h2 class="rev" style="--d:1">Todo lo que hay <em>en la vitrina</em></h2>
     </div>
 
-    <div class="filtros">
-      <div class="chips" id="chips" role="tablist" aria-label="Categorías"></div>
+    <div class="filtros rev" style="--d:2">
+      <div class="chips" id="chips" role="tablist" aria-label="Filtrar la colección"></div>
       <div class="filtros-fila">
         <label class="campo-buscar" for="buscar">
           <span class="sr">Buscar perfume o marca</span>
@@ -103,72 +101,51 @@
     </div>
 
     <div class="grilla" id="grilla" aria-live="polite"></div>
-    <button class="boton boton-borde ver-mas" id="ver-mas" hidden>Ver más</button>
+    <div class="ver-mas-caja"><button class="boton boton-borde" id="ver-mas" type="button" hidden>Ver más <span class="flecha"></span></button></div>
   </section>
 
-  <!-- ================= CHOPP ================= -->
-  <section class="chopp" id="chopp">
-    <div class="chopp-texto revela">
-      <p class="etiqueta">La casa</p>
-      <h2 class="titulo-seccion">Chopp</h2>
-      <p>El bull terrier de la casa. Blanco entero, en una marca toda negra: la otra oveja distinta del rebaño.</p>
-    </div>
-    <button class="chopp-tarjeta revela" id="chopp-tarjeta" aria-label="Dar vuelta la tarjeta de Chopp">
-      <span class="chopp-cara chopp-frente">
-        <img src="assets/chopp.webp" alt="Chopp, bull terrier blanco, en tres poses" width="880" height="971" loading="lazy">
-        <span class="chopp-sello">Tocá</span>
-      </span>
-      <span class="chopp-cara chopp-dorso">
-        <span class="chopp-ficha">
-          <span class="ficha-fila"><span>Nombre</span><b>Chopp</b></span>
-          <span class="ficha-fila"><span>Raza</span><b>Bull terrier</b></span>
-          <span class="ficha-fila"><span>Color</span><b>Blanco</b></span>
-          <span class="ficha-fila"><span>Cargo</span><b>Mascota oficial</b></span>
-        </span>
-      </span>
-    </button>
-  </section>
-
-  <!-- ================= NOSOTROS ================= -->
-  <section class="nosotros" id="nosotros">
-    <figure class="nosotros-foto revela">
-      <img src="assets/oveja-cuerpo.webp" alt="La oveja negra de cuerpo entero, con campera de cuero y pantalón cargo" width="330" height="735" loading="lazy">
-    </figure>
-    <div class="nosotros-texto revela">
-      <p class="etiqueta">Nosotros</p>
-      <h2 class="titulo-grande">La oveja negra <span class="contorno">del perfume.</span></h2>
-      <p>Fragancias árabes, de diseñador y de nicho, todas 100% originales. Elegís, armás tu pedido acá y lo cerramos por WhatsApp.</p>
-      <ul class="datos">
-        <li><span>Base</span><b>Santa Rosa, La Pampa</b></li>
-        <li><span>Pedidos</span><b>Por WhatsApp</b></li>
-        <li><span>Instagram</span><b><a id="link-ig" href="#" target="_blank" rel="noopener">@_blacksheep.sr</a></b></li>
-      </ul>
+  <!-- ================= LA CASA ================= -->
+  <section class="casa" id="nosotros">
+    <div class="envoltura casa-in">
+      <div class="arco rev"><img src="assets/chopp.webp" alt="Chopp, el bull terrier blanco de la casa" width="880" height="971" loading="lazy"></div>
+      <div>
+        <p class="rotulo rev"><b>La casa</b> · quiénes somos</p>
+        <h2 class="rev" style="--d:1">Una oveja negra y un perro blanco</h2>
+        <p class="rev" style="--d:2">Blacksheep es un emprendimiento de Santa Rosa. Cada perfume de esta página <strong>está en stock acá</strong>, no en un depósito a mil kilómetros.</p>
+        <p class="rev" style="--d:3">Chopp supervisa cada pedido. No distingue un extrait de un eau de parfum, pero se toma el trabajo muy en serio.</p>
+        <p class="rev" style="--d:4"><a class="boton boton-borde" href="#tienda">Ver la colección <span class="flecha"></span></a></p>
+      </div>
     </div>
   </section>
 
   <!-- ================= PIE ================= -->
   <footer class="pie">
-    <p class="pie-gigante" aria-hidden="true">BLACKSHEEP</p>
-    <img src="assets/logo-claro.webp" alt="Logo BLACKSHEEP" class="pie-logo" width="630" height="700" loading="lazy">
-    <p class="pie-texto">BLACKSHEEP · Santa Rosa, La Pampa</p>
-    <a href="#panel" class="pie-panel" aria-label="Entrar al panel de administración"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Panel</a>
+    <div class="envoltura pie-in">
+      <img src="assets/logo-claro.webp" alt="Logo BLACKSHEEP" class="pie-logo" width="630" height="700" loading="lazy">
+      <dl>
+        <div><dt>Pedidos</dt><dd>Por WhatsApp</dd></div>
+        <div><dt>Instagram</dt><dd><a id="link-ig" href="#" target="_blank" rel="noopener">@_blacksheep.sr</a></dd></div>
+      </dl>
+      <p class="pie-texto">Santa Rosa · La Pampa · Argentina</p>
+      <a href="#panel" class="pie-panel" aria-label="Entrar al panel de administración"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Panel</a>
+    </div>
   </footer>
 </main>
 
 <!-- ================= FICHA DE PRODUCTO ================= -->
 <div class="capa" id="capa-ficha" hidden>
   <div class="hoja hoja-ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-nombre">
-    <button class="cerrar" data-cerrar aria-label="Cerrar">Cerrar</button>
+    <div class="hoja-cabeza"><p class="rotulo">Ficha</p><button class="cerrar" type="button" data-cerrar aria-label="Cerrar">Cerrar</button></div>
     <div class="ficha" id="ficha"></div>
   </div>
 </div>
 
 <!-- ================= CARRITO ================= -->
 <div class="capa" id="capa-carrito" hidden>
-  <aside class="hoja hoja-lateral" role="dialog" aria-modal="true" aria-labelledby="carrito-titulo">
+  <aside class="hoja" role="dialog" aria-modal="true" aria-labelledby="carrito-titulo">
     <div class="hoja-cabeza">
-      <h2 id="carrito-titulo" class="titulo-hoja">Carrito</h2>
-      <button class="cerrar" data-cerrar aria-label="Cerrar">Cerrar</button>
+      <h2 id="carrito-titulo" class="titulo-hoja">Tu pedido</h2>
+      <button class="cerrar" type="button" data-cerrar aria-label="Cerrar">Cerrar</button>
     </div>
     <div class="carrito-lista" id="carrito-lista"></div>
     <form class="carrito-pie" id="form-pedido">
@@ -181,7 +158,7 @@
         <span>Nota (opcional)</span>
         <textarea id="pedido-nota" rows="2" maxlength="500" placeholder="Ej.: retiro el sábado"></textarea>
       </label>
-      <button type="submit" class="boton boton-ancho boton-brillo" id="enviar-pedido">Enviar pedido por WhatsApp</button>
+      <button type="submit" class="boton boton-ancho" id="enviar-pedido">Enviar pedido por WhatsApp</button>
       <p class="aviso-chico" id="aviso-pedido" role="status"></p>
     </form>
   </aside>
@@ -193,7 +170,7 @@
     <div class="hoja-cabeza">
       <label for="buscar-rapido" class="sr">Buscar</label>
       <input id="buscar-rapido" type="search" class="buscar-grande" placeholder="¿Qué perfume buscás?" autocomplete="off">
-      <button class="cerrar" data-cerrar aria-label="Cerrar">Cerrar</button>
+      <button class="cerrar" type="button" data-cerrar aria-label="Cerrar">Cerrar</button>
     </div>
     <div class="resultados" id="resultados"></div>
   </div>
@@ -205,7 +182,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="config.js"></script>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 <script src="panel.js"></script>
 </body>
 </html>

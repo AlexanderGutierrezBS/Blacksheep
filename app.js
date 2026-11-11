@@ -86,10 +86,21 @@
     categoria: "Todo",
     texto: "",
     orden: "destacados",
-    mostrar: 24,
+    mostrar: 12,
     whatsapp: "",
     carrito: leerLocal("bs-carrito", [])
   };
+
+  /* Recorrido de la portada: qué perfume cuenta cada momento y con qué palabras.
+     Para cambiar uno, se cambia su código (el mismo que figura en el panel) y el texto.
+     Si un perfume se queda sin stock o se oculta, su capítulo no se muestra. */
+  const CAPITULOS = [
+    { codigo: "BS-LATTAFA-KHAMRAH-QAHWA", momento: "Para la noche", relato: "Café recién hecho, canela y vainilla. Rinde más cuando baja el sol, y mucho más cuando baja la temperatura." },
+    { codigo: "BS-RASASI-HAWAS-ICE", momento: "Para el calor", relato: "Limón, manzana y un fondo de almizcle limpio. Fresco de verdad, de los que aguantan una siesta pampeana en enero." },
+    { codigo: "BS-RIIFFS-MOMENTO", momento: "Para que pregunten", relato: "Extrait de parfum: más concentrado, más horas en la piel. Es el que te hace repetir el nombre dos veces porque no lo conocían." },
+    { codigo: "BS-LATTAFA-YARA", momento: "Para todos los días", relato: "Vainilla, frutas tropicales y almizcle. Dulce sin empalagar: va a la oficina, a la facultad y al café de las cinco." }
+  ];
+  const GENEROS = [["Masculino", "Para él"], ["Femenino", "Para ella"], ["Unisex", "Unisex"]];
 
   const ORDEN_CAT = ["Nicho", "Diseñador", "Árabe", "Victoria's Secret", "Indonesia", "Kits", "Cuidado Personal"];
 
@@ -117,6 +128,7 @@
       pintarGrilla();
       pintarCarrito();
       pintarAnuncios();
+      pintarPortada();
     } catch (e) {
       $("#grilla").innerHTML = `<div class="vacio-grilla"><b>No pudimos cargar la tienda</b>Revisá tu conexión y volvé a intentar. (${esc(e.message)})</div>`;
       $("#cuenta").textContent = "";
@@ -130,6 +142,38 @@
     if (ofertas) textos.unshift(ofertas === 1 ? "1 producto en oferta" : `${ofertas} productos en oferta`);
     const tira = textos.map((t) => `<span>${esc(t)}</span>`).join("");
     $("#anuncios-pista").innerHTML = tira + tira;
+  }
+
+  /* Portada: cifras reales y recorrido por los perfumes destacados */
+  function pintarPortada() {
+    const ps = estado.productos;
+    if (ps.length) {
+      $("#dato-cantidad").textContent = ps.length.toLocaleString("es-AR");
+      $("#dato-casas").textContent = new Set(ps.map((p) => p.marca).filter(Boolean)).size;
+    }
+    $("#recorrido").innerHTML = CAPITULOS.map((c) => {
+      const p = ps.find((x) => x.codigo === c.codigo);
+      if (!p || p.agotado || !p.foto) return "";
+      const f = p.perfil || {};
+      const pr = precioTarjeta(p);
+      const deDia = Number(f.dia) >= Number(f.noche);
+      return `<article class="capitulo">
+        <div class="nicho rev"><img src="${esc(fotoUrl(p.foto))}" alt="${esc((p.marca || "") + " " + p.nombre)}" loading="lazy" width="800" height="1000"></div>
+        <div>
+          <p class="rotulo rev"><b>${esc(c.momento)}</b></p>
+          <h2 class="rev" style="--d:1">${esc(p.nombre)}</h2>
+          ${p.marca ? `<p class="de rev" style="--d:1">de ${esc(p.marca)}</p>` : ""}
+          <p class="relato rev" style="--d:2">${esc(c.relato)}</p>
+          ${Array.isArray(f.notas) && f.notas.length ? `<ul class="notas-lista rev" style="--d:3" aria-label="Notas olfativas">${f.notas.slice(0, 5).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+          <p class="fila-datos rev" style="--d:4">${f.longevidad ? `<span>Dura <b>${esc(f.longevidad)}</b></span>` : ""}${f.estela ? `<span>Estela <b>${esc(f.estela)}</b></span>` : ""}${f.dia != null && f.noche != null ? `<span><b>${deDia ? f.dia : f.noche}%</b> ${deDia ? "de día" : "de noche"}</span>` : ""}</p>
+          <div class="pie-capitulo rev" style="--d:5">
+            <span class="precio-grande">${pr.desde ? "Desde " : ""}${pesos(pr.ahora)}${pr.oferta ? `<s>${pesos(pr.antes)}</s>` : ""}</span>
+            <button class="boton" type="button" data-ficha="${esc(p.codigo)}">Ver ficha <span class="flecha"></span></button>
+          </div>
+        </div>
+      </article>`;
+    }).join("");
+    observar();
   }
 
   function pintarEsqueleto() {
@@ -147,9 +191,13 @@
     const ofertas = estado.productos.filter(ofertaVigente).length;
     const lista = [["Todo", estado.productos.length]];
     if (ofertas) lista.push(["Ofertas", ofertas]);
-    cats.forEach((c) => lista.push([c, cuenta[c]]));
-    $("#chips").innerHTML = lista.map(([c, n]) =>
-      `<button class="chip" role="tab" data-cat="${esc(c)}" aria-selected="${c === estado.categoria}">${esc(c)}<small>${n}</small></button>`
+    GENEROS.forEach(([g, t]) => {
+      const n = estado.productos.filter((p) => p.genero === g).length;
+      if (n) lista.push(["g:" + g, n, t]);
+    });
+    if (cats.length > 1) cats.forEach((c) => lista.push([c, cuenta[c]]));
+    $("#chips").innerHTML = lista.map(([c, n, t]) =>
+      `<button class="chip" type="button" role="tab" data-cat="${esc(c)}" aria-selected="${c === estado.categoria}">${esc(t || c)}<small>${n}</small></button>`
     ).join("");
   }
 
@@ -157,7 +205,8 @@
     const q = normal(estado.texto).trim();
     let lista = estado.productos.filter((p) => {
       if (estado.categoria === "Ofertas" && !ofertaVigente(p)) return false;
-      if (estado.categoria !== "Todo" && estado.categoria !== "Ofertas" && p.categoria !== estado.categoria) return false;
+      if (estado.categoria.startsWith("g:")) { if (p.genero !== estado.categoria.slice(2)) return false; }
+      else if (estado.categoria !== "Todo" && estado.categoria !== "Ofertas" && p.categoria !== estado.categoria) return false;
       if (q) {
         const bolsa = normal([p.nombre, p.marca, p.linea, p.familia, p.acordes, p.categoria].join(" "));
         return q.split(/\s+/).every((pal) => bolsa.includes(pal));
@@ -182,18 +231,16 @@
     const t = tallasDe(p);
     const detalle = [p.concentracion, t.length ? t.join(" / ") + " ml" : (p.ml ? p.ml + " ml" : "")].filter(Boolean).join(" · ");
     const foto = p.foto
-      ? `<img src="${esc(fotoUrl(p.foto))}" alt="${esc(p.nombre)}" loading="lazy" width="400" height="500">`
-      : `<span class="tarjeta-sin-foto">${esc(p.marca || p.nombre)}</span>`;
+      ? `<img src="${esc(fotoUrl(p.foto))}" alt="${esc(p.nombre)}" loading="lazy" width="800" height="1000">`
+      : `<span class="sin-foto">${esc(p.marca || p.nombre)}</span>`;
     const sello = p.agotado ? `<span class="sello sello-claro">Sin stock</span>`
       : pr.oferta ? `<span class="sello">−${Math.round(p.oferta_porcentaje || (1 - pr.ahora / pr.antes) * 100)}%</span>` : "";
-    return `<button class="tarjeta${p.agotado ? " agotado" : ""}" data-codigo="${esc(p.codigo)}" style="--i:${i % 24}">
-      <span class="tarjeta-foto">${foto}${sello}</span>
-      <span class="tarjeta-info">
-        <span class="tarjeta-marca">${esc(p.marca || p.categoria)}</span>
-        <span class="tarjeta-nombre">${esc(p.nombre)}</span>
-        ${detalle ? `<span class="tarjeta-detalle">${esc(detalle)}</span>` : ""}
-        <span class="precio">${pr.desde ? "<small>Desde</small>" : ""}${pesos(pr.ahora)}${pr.oferta ? `<s>${pesos(pr.antes)}</s>` : ""}</span>
-      </span>
+    return `<button class="tarjeta rev${p.agotado ? " agotado" : ""}" type="button" data-codigo="${esc(p.codigo)}" style="--d:${i % 4}">
+      <span class="nicho">${foto}${sello}${p.agotado ? "" : `<span class="mas" aria-hidden="true">+</span>`}</span>
+      <span class="tarjeta-marca">${esc(p.marca || p.categoria)}</span>
+      <span class="tarjeta-nombre">${esc(p.nombre)}</span>
+      ${detalle ? `<span class="tarjeta-detalle">${esc(detalle)}</span>` : ""}
+      <span class="precio">${pr.desde ? "<small>Desde</small>" : ""}${pesos(pr.ahora)}${pr.oferta ? `<s>${pesos(pr.antes)}</s>` : ""}</span>
     </button>`;
   }
 
@@ -207,11 +254,12 @@
     }
     const lista = filtrados();
     const visibles = lista.slice(0, estado.mostrar);
-    $("#cuenta").textContent = lista.length === 1 ? "1 producto" : `${lista.length.toLocaleString("es-AR")} productos`;
+    $("#cuenta").textContent = lista.length === 1 ? "1 fragancia" : `${lista.length.toLocaleString("es-AR")} fragancias`;
     $("#grilla").innerHTML = visibles.length
       ? visibles.map((p, i) => tarjetaHtml(p, i)).join("")
       : `<div class="vacio-grilla"><b>Nada por acá</b>Probá con otra marca, otro nombre o mirá todas las categorías.</div>`;
     $("#ver-mas").hidden = lista.length <= estado.mostrar;
+    observar();
   }
 
   /* ---------- ficha ---------- */
@@ -247,28 +295,29 @@
     const pr = t.length ? precioDe(p, ml) : precioDe(p);
     const notas = [["Salida", p.salida], ["Corazón", p.corazon], ["Fondo", p.fondo]].filter(([, v]) => v);
     const acordes = (p.acordes || "").split(/[,;·]/).map((a) => a.trim()).filter(Boolean).slice(0, 8);
-    const sub = [p.concentracion, p.genero, p.familia].filter(Boolean).join(" · ");
+    const sub = [p.concentracion, p.genero, p.familia, t.length <= 1 ? ((t[0] || p.ml) ? (t[0] || p.ml) + " ml" : "") : ""].filter(Boolean).join(" · ");
     const fotosFicha = [...new Set([p.foto, ...Object.values(p.fotos_tallas || {})].filter(Boolean))];
     $("#ficha").innerHTML = `
-      <div class="ficha-foto">${fotosFicha.length ? fotosFicha.map((f) => `<img src="${esc(fotoUrl(f))}" data-foto="${esc(f)}" alt="${esc(p.nombre)}" width="800" height="1000" decoding="sync"${f === fotoDe(p, ml) ? "" : " hidden"}>`).join("") : `<span class="tarjeta-sin-foto">${esc(p.marca || "")}</span>`}</div>
+      <div class="nicho ficha-foto">${fotosFicha.length ? fotosFicha.map((f) => `<img src="${esc(fotoUrl(f))}" data-foto="${esc(f)}" alt="${esc(p.nombre)}" width="800" height="1000" decoding="sync"${f === fotoDe(p, ml) ? "" : " hidden"}>`).join("") : `<span class="sin-foto">${esc(p.marca || "")}</span>`}</div>
       <div>
-        <p class="etiqueta">${esc(p.marca || p.categoria)}</p>
+        <p class="rotulo"><b>${esc(p.marca || p.categoria)}</b></p>
         <h3 id="ficha-nombre">${esc(p.nombre)}</h3>
-        ${sub ? `<p class="tarjeta-detalle" style="margin:0 0 16px">${esc(sub)}</p>` : ""}
+        ${sub ? `<p class="ficha-sub">${esc(sub)}</p>` : ""}
         ${p.adn ? `<p class="ficha-adn">${esc(p.adn)}</p>` : ""}
-        ${notas.length ? `<dl class="notas">${notas.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` : ""}
-        ${acordes.length ? `<ul class="acordes">${acordes.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+        ${notas.length ? `<div class="bloque"><p class="rotulo">Pirámide</p><dl class="notas">${notas.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl></div>` : ""}
         ${perfilHtml(p.perfil)}
-        ${t.length > 1 ? `<fieldset class="tallas"><legend>Tamaño</legend>${t.map((m) =>
-          `<label class="talla"><input type="radio" name="talla" value="${esc(m)}" ${m === ml ? "checked" : ""}><span>${esc(m)} ml</span></label>`).join("")}</fieldset>`
-          : (t.length === 1 ? `<p class="tarjeta-detalle" style="margin:0 0 12px">${esc(t[0])} ml</p>` : "")}
-        <p class="ficha-precio">${pesos(pr.ahora)}${pr.oferta ? `<s>${pesos(pr.antes)}</s>` : ""}</p>
-        ${p.agotado
-          ? `<button class="boton boton-ancho" disabled>Sin stock</button>`
-          : `<div class="ficha-acciones">
-              <div class="cantidad"><button type="button" data-cant="-1" aria-label="Uno menos">−</button><output aria-live="polite">${cant}</output><button type="button" data-cant="1" aria-label="Uno más">+</button></div>
-              <button class="boton" id="agregar">Agregar · ${pesos(pr.ahora * cant)}</button>
-            </div>`}
+        ${acordes.length ? `<div class="bloque"><p class="rotulo">Acordes</p><ul class="acordes">${acordes.map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>` : ""}
+        <div class="bloque">
+          ${t.length > 1 ? `<fieldset class="tallas"><legend class="rotulo">Tamaño</legend>${t.map((m) =>
+            `<label class="talla"><input type="radio" name="talla" value="${esc(m)}" ${m === ml ? "checked" : ""}><span>${esc(m)} ml</span></label>`).join("")}</fieldset>` : ""}
+          <p class="ficha-precio">${pesos(pr.ahora)}${pr.oferta ? `<s>${pesos(pr.antes)}</s>` : ""}</p>
+          ${p.agotado
+            ? `<button class="boton boton-ancho" type="button" disabled>Sin stock</button>`
+            : `<div class="ficha-acciones">
+                <div class="cantidad"><button type="button" data-cant="-1" aria-label="Uno menos">−</button><output aria-live="polite">${cant}</output><button type="button" data-cant="1" aria-label="Uno más">+</button></div>
+                <button class="boton" type="button" id="agregar">Agregar · ${pesos(pr.ahora * cant)}</button>
+              </div>`}
+        </div>
       </div>`;
   }
 
@@ -277,37 +326,38 @@
     if (!f || typeof f !== "object") return "";
     const bloques = [];
     if (Array.isArray(f.notas) && f.notas.length) {
-      bloques.push(`<div class="perfil-bloque"><p class="perfil-titulo">Notas</p>
-        <ul class="perfil-notas">${f.notas.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>`);
+      bloques.push(`<div class="bloque"><p class="rotulo">Notas</p>
+        <ul class="notas-lista">${f.notas.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>`);
     }
     if (f.longevidad || f.estela) {
-      bloques.push(`<div class="perfil-bloque perfil-duo">
-        ${f.longevidad ? `<div><span class="perfil-titulo">Duración</span><b>${esc(f.longevidad)}</b></div>` : ""}
-        ${f.estela ? `<div><span class="perfil-titulo">Estela</span><b>${esc(f.estela)}</b></div>` : ""}
+      bloques.push(`<div class="bloque duo">
+        ${f.longevidad ? `<div><b>${esc(f.longevidad)}</b><span>Duración</span></div>` : ""}
+        ${f.estela ? `<div><b>${esc(f.estela)}</b><span>Estela</span></div>` : ""}
       </div>`);
     }
     if (f.dia != null && f.noche != null) {
       const d = Math.max(0, Math.min(100, Number(f.dia))), total = d + Number(f.noche) || 100, pd = Math.round(d / total * 100);
-      bloques.push(`<div class="perfil-bloque"><p class="perfil-titulo">¿Día o noche?</p>
+      bloques.push(`<div class="bloque"><p class="rotulo">Cuándo usarlo</p>
         <div class="dianoche" role="img" aria-label="Día ${pd}%, noche ${100 - pd}%">
-          <span class="dn-dia" style="width:${pd}%">Día</span><span class="dn-noche">Noche</span>
+          <span class="dn-dia" style="width:${pd}%">Día ${pd}%</span><span class="dn-noche">Noche ${100 - pd}%</span>
         </div></div>`);
     }
+    const partes = [];
     if (f.estaciones && typeof f.estaciones === "object") {
       const ORDEN = ["Invierno", "Primavera", "Verano", "Otoño"];
       const ent = Object.entries(f.estaciones).sort(([a], [b]) => (ORDEN.indexOf(a) + 9) % 9 - (ORDEN.indexOf(b) + 9) % 9);
-      const max = Math.max(...ent.map(([, v]) => Number(v) || 0), 1);
-      bloques.push(`<div class="perfil-bloque"><p class="perfil-titulo">Estaciones</p>
-        <div class="estaciones">${ent.map(([k, v]) => `
-          <div class="estacion"><span>${esc(k)}</span><i style="--n:${Math.round((Number(v) || 0) / max * 100)}%"></i></div>`).join("")}
-        </div></div>`);
+      partes.push(`<p class="rotulo">Estaciones</p>
+        <div class="estaciones">${ent.map(([k, v]) => { const n = Math.max(0, Math.min(100, Math.round(Number(v) || 0))); return `
+          <div class="estacion"><span>${esc(k)}<b>${n}%</b></span><i style="--n:${n}%"></i></div>`; }).join("")}
+        </div>`);
     }
     if (f.puntuacion) {
       const pts = Number(f.puntuacion);
-      bloques.push(`<p class="perfil-puntaje"><b>${pts.toLocaleString("es-AR", { minimumFractionDigits: 1 })}</b> / 5
+      partes.push(`<p class="puntaje"><b>${pts.toLocaleString("es-AR", { minimumFractionDigits: 1 })}</b>sobre 5
         ${f.votos ? `· ${Number(f.votos).toLocaleString("es-AR")} votos` : ""}${f.fuente ? ` en ${esc(f.fuente)}` : ""}</p>`);
     }
-    return bloques.length ? `<div class="perfil">${bloques.join("")}</div>` : "";
+    if (partes.length) bloques.push(`<div class="bloque">${partes.join("")}</div>`);
+    return bloques.join("");
   }
 
   /* ---------- carrito ---------- */
@@ -322,7 +372,7 @@
     guardarLocal("bs-carrito", estado.carrito);
     pintarCarrito();
     cerrarCapas();
-    toast(`${p.nombre} al carrito`);
+    toast(`${p.nombre} se sumó a tu pedido`);
     const c = $("#contador"); c.classList.remove("salto"); void c.offsetWidth; c.classList.add("salto");
   }
 
@@ -346,7 +396,7 @@
     $("#enviar-pedido").disabled = !lineas.length;
     $("#carrito-lista").innerHTML = lineas.length ? lineas.map((l) => `
       <div class="linea">
-        <div class="linea-foto">${fotoDe(l.p, l.ml) ? `<img src="${esc(fotoUrl(fotoDe(l.p, l.ml)))}" alt="">` : ""}</div>
+        <div class="nicho linea-foto">${fotoDe(l.p, l.ml) ? `<img src="${esc(fotoUrl(fotoDe(l.p, l.ml)))}" alt="">` : ""}</div>
         <div>
           <p class="linea-nombre">${esc(l.p.nombre)}</p>
           <span class="linea-detalle">${esc([l.p.marca, l.ml ? l.ml + " ml" : (l.p.ml ? l.p.ml + " ml" : "")].filter(Boolean).join(" · "))}${l.pr.oferta ? " · oferta" : ""}</span>
@@ -356,7 +406,7 @@
           <div class="cantidad"><button type="button" data-linea="${esc(l.k)}" data-mov="-1" aria-label="Uno menos">−</button><output>${l.cant}</output><button type="button" data-linea="${esc(l.k)}" data-mov="1" aria-label="Uno más">+</button></div>
         </div>
       </div>`).join("")
-      : `<div class="carrito-vacio"><b>Vacío</b>Todavía no sumaste nada. Elegí tu próximo perfume en la colección.</div>`;
+      : `<div class="carrito-vacio"><b>Vacío</b>Todavía no elegiste nada. La vitrina está abierta.</div>`;
   }
 
   function moverLinea(k, mov) {
@@ -467,7 +517,9 @@
   /* ---------- eventos ---------- */
   document.addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
-    if (chip) { estado.categoria = chip.dataset.cat; estado.mostrar = 24; pintarChips(); pintarGrilla(); return; }
+    if (chip) { estado.categoria = chip.dataset.cat; estado.mostrar = 12; pintarChips(); pintarGrilla(); return; }
+    const ver = e.target.closest("[data-ficha]");
+    if (ver) { abrirFicha(ver.dataset.ficha); return; }
     const tarjeta = e.target.closest(".tarjeta[data-codigo], .resultado[data-codigo]");
     if (tarjeta) { abrirFicha(tarjeta.dataset.codigo); return; }
     if (e.target.closest("[data-cerrar]") || e.target.classList.contains("capa")) { cerrarCapas(); return; }
@@ -492,35 +544,38 @@
     setTimeout(() => { img.src = img.src.split("?")[0] + "?r=" + (n + 1); }, 600 * (n + 1));
   }, true);
 
-  // Brillo que sigue al cursor o al dedo sobre las tarjetas
-  document.addEventListener("pointermove", (e) => {
-    const t = e.target.closest && e.target.closest(".tarjeta");
-    if (!t) return;
-    const r = t.getBoundingClientRect();
-    t.style.setProperty("--mx", (e.clientX - r.left) + "px");
-    t.style.setProperty("--my", (e.clientY - r.top) + "px");
-  }, { passive: true });
-  document.addEventListener("pointerdown", (e) => {
-    const t = e.target.closest && e.target.closest(".tarjeta");
-    if (!t || e.pointerType === "mouse") return;
-    const r = t.getBoundingClientRect();
-    t.style.setProperty("--mx", (e.clientX - r.left) + "px");
-    t.style.setProperty("--my", (e.clientY - r.top) + "px");
-    t.classList.add("toque"); setTimeout(() => t.classList.remove("toque"), 700);
+  /* ---------- scroll: aparición suave y barra de progreso ---------- */
+  let ojo = null;
+  if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.documentElement.classList.add("anim");
+    ojo = new IntersectionObserver((es) => es.forEach((x) => {
+      if (x.isIntersecting) { x.target.classList.add("ya"); ojo.unobserve(x.target); }
+    }), { rootMargin: "0px 0px -6% 0px", threshold: .05 });
+  }
+  function observar() {
+    $$(".rev:not(.ya)").forEach((el) => (ojo ? ojo.observe(el) : el.classList.add("ya")));
+  }
+  let pintando = false;
+  window.addEventListener("scroll", () => {
+    if (pintando) return; pintando = true;
+    requestAnimationFrame(() => {
+      const h = document.documentElement;
+      $("#progreso").style.transform = `scaleX(${Math.min(1, h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight))})`;
+      pintando = false;
+    });
   }, { passive: true });
 
   let tBuscar;
   $("#buscar").addEventListener("input", (e) => {
     clearTimeout(tBuscar);
-    tBuscar = setTimeout(() => { estado.texto = e.target.value; estado.mostrar = 24; pintarGrilla(); }, 160);
+    tBuscar = setTimeout(() => { estado.texto = e.target.value; estado.mostrar = 12; pintarGrilla(); }, 160);
   });
   $("#orden").addEventListener("change", (e) => { estado.orden = e.target.value; pintarGrilla(); });
-  $("#ver-mas").addEventListener("click", () => { estado.mostrar += 24; pintarGrilla(); });
+  $("#ver-mas").addEventListener("click", () => { estado.mostrar += 12; pintarGrilla(); });
   $("#abrir-carrito").addEventListener("click", () => { pintarCarrito(); abrirCapa("#capa-carrito"); });
   $("#abrir-buscar").addEventListener("click", () => abrirCapa("#capa-buscar"));
   $("#buscar-rapido").addEventListener("input", pintarResultados);
   $("#form-pedido").addEventListener("submit", enviarPedido);
-  $("#chopp-tarjeta").addEventListener("click", (e) => e.currentTarget.classList.toggle("girada"));
   $("#link-ig").href = "https://instagram.com/" + (CFG.instagram || "_blacksheep.sr");
   $("#pedido-nombre").value = leerLocal("bs-nombre", "");
   $("#pedido-nombre").addEventListener("change", (e) => guardarLocal("bs-nombre", e.target.value.trim()));
@@ -529,6 +584,7 @@
   // para el panel
   window.BS_TIENDA = { recargar: cargar, fotoUrl, pesos, esc };
 
+  observar();
   rutear();
   cargar();
 })();
