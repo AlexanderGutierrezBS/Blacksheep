@@ -58,6 +58,15 @@
     ? Object.keys(p.precios_tallas).filter((k) => p.precios_tallas[k] != null).sort((a, b) => Number(a) - Number(b))
     : [];
 
+  /* Stock: por tamaño si el perfume lo tiene cargado así; si no, el total.
+     null = sin dato (no se limita). */
+  const stockDe = (p, ml) => {
+    if (ml && p.stock_tallas && p.stock_tallas[ml] != null) return Number(p.stock_tallas[ml]);
+    return p.stock == null ? null : Number(p.stock);
+  };
+  const tallaAgotada = (p, ml) => stockDe(p, ml) === 0;
+  const tallasConStock = (p) => tallasDe(p).filter((ml) => !tallaAgotada(p, ml));
+
   function precioDe(p, ml) {
     const of = ofertaVigente(p);
     if (ml) {
@@ -71,7 +80,7 @@
   }
 
   function precioTarjeta(p) {
-    const t = tallasDe(p);
+    const t = tallasConStock(p).length ? tallasConStock(p) : tallasDe(p);
     if (t.length > 1) {
       const vs = t.map((ml) => precioDe(p, ml));
       const min = vs.reduce((a, b) => (b.ahora < a.ahora ? b : a));
@@ -113,7 +122,7 @@
         estado.whatsapp = DEMO.whatsapp || "";
       } else {
         const cols = "codigo,nombre,marca,linea,concentracion,genero,familia,ml,categoria,acordes,adn,salida,corazon,fondo,foto," +
-          "precio_publico,precio_oferta,precios_tallas,ofertas_tallas,oferta_activa,oferta_porcentaje,oferta_hasta,agotado,stock,perfil,fotos_tallas";
+          "precio_publico,precio_oferta,precios_tallas,ofertas_tallas,oferta_activa,oferta_porcentaje,oferta_hasta,agotado,stock,stock_tallas,perfil,fotos_tallas";
         const todos = [];
         for (let desde = 0; ; desde += 1000) {
           const lote = await api(`productos?select=${cols}&visible=eq.true&precio_publico=not.is.null&order=codigo&limit=1000&offset=${desde}`);
@@ -228,7 +237,7 @@
 
   function tarjetaHtml(p, i = 0) {
     const pr = precioTarjeta(p);
-    const t = tallasDe(p);
+    const t = tallasConStock(p).length ? tallasConStock(p) : tallasDe(p);
     const detalle = [p.concentracion, t.length ? t.join(" / ") + " ml" : (p.ml ? p.ml + " ml" : "")].filter(Boolean).join(" · ");
     const foto = p.foto
       ? `<img src="${esc(fotoUrl(p.foto))}" alt="${esc(p.nombre)}" loading="lazy" width="800" height="1000">`
@@ -267,7 +276,7 @@
   function abrirFicha(codigo) {
     const p = estado.productos.find((x) => x.codigo === codigo);
     if (!p) return;
-    fichaActual = { p, ml: tallasDe(p)[0] || null, cant: 1 };
+    fichaActual = { p, ml: tallasConStock(p)[0] || tallasDe(p)[0] || null, cant: 1 };
     pintarFicha();
     abrirCapa("#capa-ficha");
   }
@@ -309,7 +318,9 @@
         ${acordes.length ? `<div class="bloque"><p class="rotulo">Acordes</p><ul class="acordes">${acordes.map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>` : ""}
         <div class="bloque">
           ${t.length > 1 ? `<fieldset class="tallas"><legend class="rotulo">Tamaño</legend>${t.map((m) =>
-            `<label class="talla"><input type="radio" name="talla" value="${esc(m)}" ${m === ml ? "checked" : ""}><span>${esc(m)} ml</span></label>`).join("")}</fieldset>` : ""}
+            tallaAgotada(p, m)
+              ? `<label class="talla talla-agotada"><input type="radio" name="talla" value="${esc(m)}" disabled><span>${esc(m)} ml <small>Sin stock</small></span></label>`
+              : `<label class="talla"><input type="radio" name="talla" value="${esc(m)}" ${m === ml ? "checked" : ""}><span>${esc(m)} ml</span></label>`).join("")}</fieldset>` : ""}
           <p class="ficha-precio">${pesos(pr.ahora)}${pr.oferta ? `<s>${pesos(pr.antes)}</s>` : ""}</p>
           ${p.agotado
             ? `<button class="boton boton-ancho" type="button" disabled>Sin stock</button>`
@@ -381,6 +392,7 @@
       const p = estado.productos.find((x) => x.codigo === i.codigo);
       if (!p || p.agotado) return null;
       if (i.ml && !(p.precios_tallas && p.precios_tallas[i.ml] != null)) return null;
+      if (tallaAgotada(p, i.ml)) return null;
       const pr = i.ml ? precioDe(p, i.ml) : (tallasDe(p).length === 1 ? precioDe(p, tallasDe(p)[0]) : precioDe(p));
       return { ...i, p, pr };
     }).filter(Boolean);
@@ -516,7 +528,7 @@
 
   /* ---------- eventos ---------- */
   document.addEventListener("click", (e) => {
-    const chip = e.target.closest(".chip");
+    const chip = e.target.closest("#chips .chip[data-cat]");
     if (chip) { estado.categoria = chip.dataset.cat; estado.mostrar = 12; pintarChips(); pintarGrilla(); return; }
     const ver = e.target.closest("[data-ficha]");
     if (ver) { abrirFicha(ver.dataset.ficha); return; }
@@ -524,7 +536,13 @@
     if (tarjeta) { abrirFicha(tarjeta.dataset.codigo); return; }
     if (e.target.closest("[data-cerrar]") || e.target.classList.contains("capa")) { cerrarCapas(); return; }
     const c = e.target.closest("[data-cant]");
-    if (c && fichaActual) { fichaActual.cant = Math.max(1, Math.min(99, fichaActual.cant + Number(c.dataset.cant))); actualizarFicha(); return; }
+    if (c && fichaActual) {
+      const tope = stockDe(fichaActual.p, fichaActual.ml);
+      const max = tope == null ? 99 : Math.max(1, Math.min(99, tope));
+      const nueva = fichaActual.cant + Number(c.dataset.cant);
+      if (nueva > max) { toast(max === 1 ? "Queda 1 sola unidad" : `Quedan ${max} unidades`); return; }
+      fichaActual.cant = Math.max(1, nueva); actualizarFicha(); return;
+    }
     if (e.target.closest("#agregar")) { agregar(); return; }
     const mov = e.target.closest("[data-mov]");
     if (mov) { moverLinea(mov.dataset.linea, Number(mov.dataset.mov)); return; }

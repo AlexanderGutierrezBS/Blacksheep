@@ -55,7 +55,7 @@
 
   /* ---------- armado general ---------- */
   let pestana = "pedidos";
-  const PESTANAS = [["pedidos", "Pedidos"], ["productos", "Productos"], ["formula", "Fórmula"], ["ajustes", "Ajustes"]];
+  const PESTANAS = [["pedidos", "Pedidos"], ["stock", "Stock"], ["productos", "Productos"], ["formula", "Fórmula"], ["ajustes", "Ajustes"]];
 
   async function mostrar() {
     if (DEMO) {
@@ -116,7 +116,7 @@
   function pintarPestana() {
     const c = $("#panel-cuerpo");
     c.innerHTML = `<p class="aviso-chico">Cargando…</p>`;
-    ({ pedidos: verPedidos, productos: verProductos, formula: verFormula, ajustes: verAjustes })[pestana](c)
+    ({ pedidos: verPedidos, stock: verStock, productos: verProductos, formula: verFormula, ajustes: verAjustes })[pestana](c)
       .catch((e) => { c.innerHTML = `<div class="panel-caja"><h2>No se pudo cargar</h2><p>${esc(e.message)}</p></div>`; });
   }
 
@@ -156,6 +156,113 @@
       try { await api(`pedidos?numero=eq.${s.dataset.numero}`, { method: "PATCH", body: JSON.stringify({ estado: s.value }) }); toast(`Pedido #${s.dataset.numero}: ${s.options[s.selectedIndex].text}`); }
       catch (e) { toast("No se pudo cambiar el estado"); }
     }));
+  }
+
+  /* ---------- STOCK ----------
+     Tus perfumes propios con un − y un + por perfume (o por tamaño).
+     Cada toque se guarda al instante. En 0 la base lo marca "Sin stock"
+     sola, y al volver a sumar lo vuelve a mostrar en la tienda. */
+  let stockLista = [], textoStock = "", filtroStock = "todos", recargaTienda;
+  const colaStock = {};
+  const FILTROS_STOCK = [["todos", "Todos"], ["con", "Con stock"], ["sin", "Sin stock"]];
+  const tallasStock = (p) => (p.stock_tallas ? Object.keys(p.stock_tallas).sort((a, b) => a - b) : []);
+  const unidades = (p) => Number(p.stock) || 0;
+
+  async function verStock(c) {
+    stockLista = await api("productos?select=codigo,nombre,marca,foto,stock,stock_tallas,agotado,visible&origen=eq.propio&order=marca,nombre");
+    c.innerHTML = `
+      <div class="panel-caja">
+        <p>Tocá <b>−</b> cuando vendas uno y <b>+</b> cuando te entre mercadería. Se guarda al instante. Cuando llega a 0 pasa a <b>Sin stock</b> en la tienda; si volvés a sumar, aparece de nuevo.</p>
+        <label class="campo" for="stock-buscar"><span>Buscar</span><input id="stock-buscar" type="search" placeholder="Nombre o marca" value="${esc(textoStock)}" autocomplete="off"></label>
+        <div class="chips">${FILTROS_STOCK.map(([k, t]) => `<button class="chip" type="button" data-fstock="${k}" aria-selected="${k === filtroStock}">${t}</button>`).join("")}</div>
+      </div>
+      <div class="resumen-num" id="stock-resumen"></div>
+      <div id="stock-lista"></div>`;
+    $("#stock-buscar").addEventListener("input", (e) => { textoStock = e.target.value; pintarStock(); });
+    c.querySelectorAll("[data-fstock]").forEach((b) => b.addEventListener("click", () => {
+      filtroStock = b.dataset.fstock;
+      c.querySelectorAll("[data-fstock]").forEach((x) => x.setAttribute("aria-selected", x === b));
+      pintarStock();
+    }));
+    $("#stock-lista").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-mover]");
+      if (b) moverStock(b.dataset.codigo, b.dataset.ml || null, Number(b.dataset.mover));
+    });
+    pintarStock();
+  }
+
+  function filaStock(p) {
+    const paso = (ml, n) => `
+      <div class="stock-paso${n === 0 ? " cero" : ""}">
+        ${ml ? `<span class="stock-ml">${esc(ml)} ml</span>` : ""}
+        <div class="cantidad">
+          <button type="button" data-mover="-1" data-codigo="${esc(p.codigo)}" data-ml="${esc(ml || "")}" aria-label="Vendí uno${ml ? " de " + esc(ml) + " ml" : ""}" ${n === 0 ? "disabled" : ""}>−</button>
+          <output>${n}</output>
+          <button type="button" data-mover="1" data-codigo="${esc(p.codigo)}" data-ml="${esc(ml || "")}" aria-label="Sumar uno${ml ? " de " + esc(ml) + " ml" : ""}">+</button>
+        </div>
+      </div>`;
+    const t = tallasStock(p);
+    return `<div class="stock-fila${p.agotado ? " agotada" : ""}" id="stock-${esc(p.codigo)}">
+      ${p.foto ? `<img src="${esc(T().fotoUrl(p.foto))}" alt="" loading="lazy">` : "<span></span>"}
+      <div>
+        <span class="tarjeta-marca">${esc(p.marca || "")}</span>
+        <span class="tarjeta-nombre">${esc(p.nombre)}</span>
+        <span class="marcas">${p.agotado ? '<span class="mini">Sin stock</span>' : ""}${!p.visible ? '<span class="mini">Oculto</span>' : ""}</span>
+      </div>
+      <div class="stock-pasos">${t.length ? t.map((ml) => paso(ml, Number(p.stock_tallas[ml]) || 0)).join("") : paso(null, unidades(p))}</div>
+    </div>`;
+  }
+
+  function pintarStock() {
+    const caja = $("#stock-lista");
+    if (!caja) return;
+    const total = stockLista.reduce((s, p) => s + unidades(p), 0);
+    const sin = stockLista.filter((p) => p.agotado).length;
+    $("#stock-resumen").innerHTML = `
+      <div><span>Perfumes</span><b>${stockLista.length}</b></div>
+      <div><span>Unidades en stock</span><b>${total}</b></div>
+      <div><span>Sin stock</span><b>${sin}</b></div>`;
+    const q = textoStock.trim().toLowerCase();
+    const lista = stockLista.filter((p) =>
+      (!q || [p.nombre, p.marca].join(" ").toLowerCase().includes(q)) &&
+      (filtroStock === "todos" || (filtroStock === "sin") === !!p.agotado));
+    caja.innerHTML = lista.length ? lista.map(filaStock).join("")
+      : `<div class="panel-caja"><h2>Sin resultados</h2><p>Probá con otra búsqueda o cambiá el filtro.</p></div>`;
+  }
+
+  function moverStock(codigo, ml, delta) {
+    const p = stockLista.find((x) => x.codigo === codigo);
+    if (!p) return;
+    const antes = { stock: p.stock, stock_tallas: p.stock_tallas && { ...p.stock_tallas }, agotado: p.agotado };
+    let cambio;
+    if (ml && p.stock_tallas) {
+      const n = Math.max(0, (Number(p.stock_tallas[ml]) || 0) + delta);
+      if (n === Number(p.stock_tallas[ml])) return;
+      p.stock_tallas = { ...p.stock_tallas, [ml]: n };
+      p.stock = Object.values(p.stock_tallas).reduce((a, b) => a + (Number(b) || 0), 0);
+      cambio = { stock_tallas: p.stock_tallas };
+    } else {
+      const n = Math.max(0, unidades(p) + delta);
+      if (n === unidades(p) && p.stock != null) return;
+      p.stock = n;
+      cambio = { stock: n };
+    }
+    p.agotado = p.stock <= 0;
+    pintarStock();
+    const quedan = ml ? p.stock_tallas[ml] : p.stock;
+    toast(`${p.nombre}${ml ? " " + ml + " ml" : ""}: ${quedan === 0 ? "sin stock" : quedan === 1 ? "queda 1" : "quedan " + quedan}`);
+    // se guardan en orden, aunque toques varias veces seguidas
+    colaStock[codigo] = (colaStock[codigo] || Promise.resolve()).then(async () => {
+      try {
+        const [fila] = await api(`productos?codigo=eq.${encodeURIComponent(codigo)}&select=codigo,stock,stock_tallas,agotado`, {
+          method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(cambio) });
+        if (fila) { p.agotado = fila.agotado; }
+        clearTimeout(recargaTienda); recargaTienda = setTimeout(() => T().recargar(), 1500);
+      } catch (err) {
+        Object.assign(p, antes); pintarStock();
+        toast("No se pudo guardar. Revisá tu conexión y probá de nuevo.");
+      }
+    });
   }
 
   /* ---------- PRODUCTOS ---------- */

@@ -292,6 +292,9 @@ em, .hero h1 span:nth-child(3) > i { font-family: var(--f-acento); font-style: i
 .talla span { display: block; padding: 12px 20px; border-radius: 99px; border: 1px solid var(--linea-fuerte); font: 500 12px/1 var(--f-texto); letter-spacing: .14em; }
 .talla input:checked + span { background: var(--hueso); color: var(--tinta); border-color: var(--hueso); }
 .talla input:focus-visible + span { outline: 2px solid var(--laton); outline-offset: 2px; }
+.talla-agotada { cursor: not-allowed; }
+.talla-agotada span { color: var(--ceniza); border-style: dashed; text-decoration: line-through; text-decoration-color: rgba(160, 151, 137, .6); }
+.talla-agotada small { margin-left: 6px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; text-decoration: none; display: inline-block; }
 .ficha-precio { font: 400 2.1rem/1 var(--f-titulo); letter-spacing: .012em; margin: 0 0 16px; }
 .ficha-precio s { font: 400 14px/1 var(--f-texto); color: var(--ceniza); margin-left: 12px; letter-spacing: .04em; }
 .ficha-acciones { display: flex; gap: 10px; }
@@ -372,8 +375,19 @@ em, .hero h1 span:nth-child(3) > i { font-family: var(--f-acento); font-style: i
 .resumen-num span { display: block; font: 500 11px/1 var(--f-dato); letter-spacing: .12em; text-transform: uppercase; color: var(--texto-2); }
 .resumen-num b { font: 500 24px/1.4 var(--f-dato); font-variant-numeric: tabular-nums; }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+/* stock */
+.stock-fila { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--borde); }
+.stock-fila > img { width: 52px; aspect-ratio: 4/5; object-fit: contain; background: #fff; border-radius: 99px 99px 0 0; padding: 4px; }
+.stock-fila.agotada > img { opacity: .4; }
+.stock-fila .tarjeta-marca, .stock-fila .tarjeta-nombre { margin-top: 0; }
+.stock-fila .tarjeta-nombre { font-size: 1.05rem; margin: 3px 0; }
+.stock-pasos { display: grid; gap: 8px; justify-items: end; }
+.stock-paso { display: flex; align-items: center; gap: 8px; }
+.stock-ml { font-size: 11px; letter-spacing: .12em; color: var(--ceniza); text-transform: uppercase; }
+.stock-paso .cantidad button { width: 40px; min-height: 40px; font-size: 18px; }
+.stock-paso .cantidad button[disabled] { opacity: .25; cursor: default; }
+.stock-paso .cantidad output { min-width: 24px; }
+.stock-paso.cero output { color: var(--laton); }
 .prod-fila .tarjeta-marca, .prod-fila .tarjeta-nombre, .prod-fila .tarjeta-detalle, .prod-fila .precio { margin-top: 0; }
 .prod-fila .tarjeta-nombre { font-size: 1.05rem; margin: 3px 0; }
 
